@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sensor Analyzer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Sensor Analyzer</h1>
+  <nav>
+    <a href="index.html" class="active">Home</a>
+    <a href="about.html">About</a>
+  </nav>
+
+  <main>
+    <form id="upload-form" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".csv" />
+        <!--button type="submit">Upload</button-->
+        <button type="button" id="resetZoom">Reset Zoom</button>
+    </form>
+
+    <div>
+        <canvas id="dataChart" width="900" height="500"></canvas>
+    </div>
+
+    <script>
+        const form = document.getElementById('upload-form');
+        const ctx = document.getElementById('dataChart').getContext('2d');
+        const resetBtn = document.getElementById('resetZoom');
+        const debugOutput = document.getElementById('debug-output');
+        let chart;
+
+        function logDebug(message) {
+            debugOutput.textContent += `\n${message}`;
+        }
+
+        form.addEventListener('change', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(form);
+            try {
+                const res = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await res.json();
+                
+                if (result.issues && result.issues.length > 0) {
+                    logDebug("Upload issues: " + JSON.stringify(result.issues));
+                }
+
+                await loadAndPlotData();
+            } catch (err) {
+                logDebug("Upload error: " + err);
+                
+            }
+        });
+
+        resetBtn.addEventListener('click', () => {
+            if (chart) {
+                chart.resetZoom();
+                logDebug("Chart zoom reset.");
+            }
+        });
+
+        async function loadAndPlotData() {
+            try {
+                const res = await fetch('/data');
+                const data = await res.json();
+
+                if (data.error) {
+                    logDebug("Backend returned error: " + data.error);
+                    return;
+                }
+
+                // Debug logging
+                //logDebug("Raw data: " + JSON.stringify(data, null, 2));
+
+                // Parse the data (expects time in a value, not a string timestamp)
+                const parsedData = data.map(row => ({
+                    x: row.timestamp,
+                    y: row.value
+                }));
+
+                logDebug("Parsed data for chart:", parsedData);
+                logDebug(`Plotted ${parsedData.length} data points.`);
+
+                if (chart) chart.destroy();
+
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [{
+                            label: 'Sensor Value',
+                            data: parsedData,
+                            borderColor: 'blue',
+                            fill: false,
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        parsing: false,
+                        plugins: {
+                            zoom: {
+                                pan: {
+                                    enabled: true,
+                                    mode: 'xy'
+                                },
+                                zoom: {
+                                    wheel: { enabled: true },
+                                    pinch: { enabled: true },
+                                    mode: 'xy'
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                type: 'linear', // must correlate with data type provided by upload backend function
+                                time: {
+                                    unit: 'second'
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Time (seconds)'
+                                },
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Value'
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (err) {
+                logDebug("Error loading data: " + err.message);
+                console.error(err);
+            }
+        }
+
+
+
+
+    </script>
+
+    <section id="debug-console">
+      <h2>Debug Console</h2>
+      <pre id="debug-output">Waiting for data...</pre>
+    </section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1" defer></script>
+  <script src="script.js" defer></script>
+</body>
+</html>
