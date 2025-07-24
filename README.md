@@ -29,13 +29,6 @@ timestamp,value
 0.02,1.253823363
 ```
 
-### What Not to Commit
-Be sure your .gitignore excludes:
-venv/
-__pycache__/
-*.pyc
-sensor_data.db
-
 ## Notes
 Timestamps are assumed to be in seconds since start (e.g., 0.01 = 10 ms).
 
