@@ -1,6 +1,9 @@
 # Sensor Data Visualization App
 This Python application reads sensor data from a CSV file, processes it, and displays the results on an interactive time-series chart. It supports timestamped float values and is ideal for quick exploratory analysis of time-based signals.
 
+## Screenshot
+![Screenshot of the home page after loading the sample data file.](/assets/HomePageScreenshot.png)
+
 ## Features
 - Load data from a CSV file (e.g., timestamp,value)
 - Plot the data using time on the x-axis and value on the y-axis
@@ -25,22 +28,6 @@ timestamp,value
 0.01,0.008221146557
 0.02,1.253823363
 ```
-
-## File Structure
-sensor-visualizer/
-│
-├── sensor_data.db          # Auto-generated SQLite DB (ignored in Git)
-├── requirements.txt        # Python dependencies
-├── README.md               # This file
-├── app
-    ├── main.py             # Entry point script
-    └── routes/
-        └── sanity_check.py # Backend data checking
-└── frontend/
-    └── about.html          # About page
-    └── index.html          # Home page
-    └── script.js           # Java script for data processing
-    └── style.css           # CSS styles
 
 ### What Not to Commit
 Be sure your .gitignore excludes:
