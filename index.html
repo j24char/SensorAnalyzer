@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sensor Analyzer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Sensor Analyzer</h1>
+  <nav>
+    <a href="index.html" class="active">Home</a>
+    <a href="about.html">About</a>
+  </nav>
+
+  <main>
+    <form id="upload-form" style="margin: 20px;">
+      <input type="file" id="csvFileInput" accept=".csv" />
+    </form>
+
+    <div id="chart-container" style="position: relative; display: flex;">
+      <canvas id="dataChart" width="900" height="500" style="max-width: 100%; height: auto;"></canvas>
+
+      <div id="zoom-buttons" style="
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(44, 44, 44, 0.8);
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      ">
+        <button type="button" onclick="setZoomMode('x')">Zoom X</button>
+        <button type="button" onclick="setZoomMode('y')">Zoom Y</button>
+        <button type="button" onclick="setZoomMode('xy')">Zoom Both</button>
+        <button type="button" onclick="chart.resetZoom()">Reset Zoom</button>
+      </div>
+    </div>
+
+    <section id="debug-console">
+      <h2>Debug Console</h2>
+      <pre id="debug-output">Waiting for data...</pre>
+    </section>
+  </main>
+
+  <!-- Chart.js and plugins -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <script>
+    const ctx = document.getElementById('dataChart').getContext('2d');
+    const debugOutput = document.getElementById('debug-output');
+    const fileInput = document.getElementById('csvFileInput');
+    let chart;
+
+    function logDebug(message) {
+      debugOutput.textContent += `\n${message}`;
+    }
+
+    function setZoomMode(mode) {
+      if (chart?.options?.plugins?.zoom?.zoom) {
+        chart.options.plugins.zoom.zoom.mode = mode;
+        chart.update('none');
+        logDebug(`Zoom mode set to: ${mode}`);
+      } else {
+        console.warn('Zoom plugin options not found');
+      }
+    }
+
+    function plotData(parsedData) {
+      const chartData = parsedData.map(row => ({
+        x: parseFloat(row.timestamp),
+        y: parseFloat(row.value)
+      })).filter(d => !isNaN(d.x) && !isNaN(d.y));
+
+      logDebug(`Parsed and filtered ${chartData.length} data points.`);
+
+      if (chart) chart.destroy();
+
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          datasets: [{
+            label: 'Sensor Value',
+            data: chartData,
+            borderColor: 'blue',
+            fill: false,
+            tension: 0.1
+          }]
+        },
+        options: {
+          responsive: false,
+          parsing: false,
+          plugins: {
+            zoom: {
+              pan: {
+                enabled: true,
+                mode: 'x',
+                modifierKey: 'shift'
+              },
+              zoom: {
+                wheel: { enabled: true },
+                pinch: { enabled: true },
+                mode: 'xy'
+              }
+            }
+          },
+          scales: {
+            x: {
+              type: 'linear',
+              title: {
+                display: true,
+                text: 'Time (seconds)'
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Value'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    fileInput.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          logDebug("CSV loaded and parsed.");
+          plotData(results.data);
+        },
+        error: function(err) {
+          logDebug("Parsing error: " + err.message);
+        }
+      });
+    });
+  </script>
+</body>
+</html>

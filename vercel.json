@@ -1,0 +1,9 @@
+{
+  "projectSettings": {
+    "framework": "static"
+  },
+  "builds": [],
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" }
+  ]
+}

@@ -1,5 +1,3 @@
-//let chart;
-
 function logDebug(message) {
   const debugOutput = document.getElementById('debug-output');
   const timestamp = new Date().toLocaleTimeString();
@@ -15,17 +13,10 @@ function logDebug(message) {
   }
 }
 
-function resetZoom() {
-  if (chart) {
-    chart.resetZoom();
-    logDebug("Reset the chart zoom.");
-  }
-}
-
-function callBackendSanityCheck() {
-  fetch('/sanity-check')
-    .then(response => response.json())
-    .catch(error => {
-      logDebug(`Error calling sanity-check: ${error}`);
-    });
-}
+// function callBackendSanityCheck() {
+//   fetch('/sanity-check')
+//     .then(response => response.json())
+//     .catch(error => {
+//       logDebug(`Error calling sanity-check: ${error}`);
+//     });
+// }
