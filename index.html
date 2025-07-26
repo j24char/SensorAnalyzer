@@ -39,6 +39,9 @@
       </div>
     </div>
 
+    <h2>Analysis Results</h2>
+    <pre id="output">Upload a file to see results...</pre>
+
     <section id="debug-console">
       <h2>Debug Console</h2>
       <pre id="debug-output">Waiting for data...</pre>
@@ -50,99 +53,108 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
+  <!-- App logic -->
   <script>
-    const ctx = document.getElementById('dataChart').getContext('2d');
-    const debugOutput = document.getElementById('debug-output');
-    const fileInput = document.getElementById('csvFileInput');
-    let chart;
+    document.addEventListener('DOMContentLoaded', () => {
+      const ctx = document.getElementById('dataChart').getContext('2d');
+      const debugOutput = document.getElementById('debug-output');
+      const fileInput = document.getElementById('csvFileInput');
+      let chart;
 
-    function logDebug(message) {
-      debugOutput.textContent += `\n${message}`;
-    }
-
-    function setZoomMode(mode) {
-      if (chart?.options?.plugins?.zoom?.zoom) {
-        chart.options.plugins.zoom.zoom.mode = mode;
-        chart.update('none');
-        logDebug(`Zoom mode set to: ${mode}`);
-      } else {
-        console.warn('Zoom plugin options not found');
+      function logDebug(message) {
+        debugOutput.textContent += `\n${message}`;
       }
-    }
 
-    function plotData(parsedData) {
-      const chartData = parsedData.map(row => ({
-        x: parseFloat(row.timestamp),
-        y: parseFloat(row.value)
-      })).filter(d => !isNaN(d.x) && !isNaN(d.y));
+      window.setZoomMode = function (mode) {
+        if (chart?.options?.plugins?.zoom?.zoom) {
+          chart.options.plugins.zoom.zoom.mode = mode;
+          chart.update('none');
+          logDebug(`Zoom mode set to: ${mode}`);
+        } else {
+          console.warn('Zoom plugin options not found');
+        }
+      };
 
-      logDebug(`Parsed and filtered ${chartData.length} data points.`);
+      function plotData(parsedData) {
+        const chartData = parsedData.map(row => ({
+          x: parseFloat(row.timestamp),
+          y: parseFloat(row.value)
+        })).filter(d => !isNaN(d.x) && !isNaN(d.y));
 
-      if (chart) chart.destroy();
+        logDebug(`Parsed and filtered ${chartData.length} data points.`);
 
-      chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          datasets: [{
-            label: 'Sensor Value',
-            data: chartData,
-            borderColor: 'blue',
-            fill: false,
-            tension: 0.1
-          }]
-        },
-        options: {
-          responsive: false,
-          parsing: false,
-          plugins: {
-            zoom: {
-              pan: {
-                enabled: true,
-                mode: 'x',
-                modifierKey: 'shift'
-              },
-              zoom: {
-                wheel: { enabled: true },
-                pinch: { enabled: true },
-                mode: 'xy'
-              }
-            }
+        if (chart) chart.destroy();
+
+        chart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            datasets: [{
+              label: 'Sensor Value',
+              data: chartData,
+              borderColor: 'blue',
+              fill: false,
+              tension: 0.1
+            }]
           },
-          scales: {
-            x: {
-              type: 'linear',
-              title: {
-                display: true,
-                text: 'Time (seconds)'
+          options: {
+            responsive: false,
+            parsing: false,
+            plugins: {
+              zoom: {
+                pan: {
+                  enabled: true,
+                  mode: 'x',
+                  modifierKey: 'shift'
+                },
+                zoom: {
+                  wheel: { enabled: true },
+                  pinch: { enabled: true },
+                  mode: 'xy'
+                }
               }
             },
-            y: {
-              title: {
-                display: true,
-                text: 'Value'
+            scales: {
+              x: {
+                type: 'linear',
+                title: {
+                  display: true,
+                  text: 'Time (seconds)'
+                }
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: 'Value'
+                }
               }
             }
           }
-        }
-      });
-    }
+        });
+      }
 
-    fileInput.addEventListener('change', (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
+      fileInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
 
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: function(results) {
-          logDebug("CSV loaded and parsed.");
-          plotData(results.data);
-        },
-        error: function(err) {
-          logDebug("Parsing error: " + err.message);
-        }
+        Papa.parse(file, {
+          header: true,
+          skipEmptyLines: true,
+          complete: function (results) {
+            logDebug("CSV loaded and parsed.");
+            plotData(results.data);
+            const analysis = analyzeTimeSeries(results.data); // this comes from scripts.js
+            logDebug(JSON.stringify(analysis, null, 2));
+            document.getElementById("output").textContent = JSON.stringify(analysis, null, 2);
+          },
+          error: function (err) {
+            logDebug("Parsing error: " + err.message);
+          }
+        });
       });
     });
   </script>
+
+  <!-- Your reusable analysis functions -->
+  <script src="script.js" defer></script>
 </body>
 </html>
